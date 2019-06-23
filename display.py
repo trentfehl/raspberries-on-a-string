@@ -1,5 +1,6 @@
 import unicornhathd
 import random
+import time
 import numpy as np
 from PIL import Image
 
@@ -17,7 +18,7 @@ class Display:
         self.step = 0
         self.axis = 0
 
-    def InitializeDefault(self, n_points):
+    def InitializeRandomPoints(self, n_points):
         """Randomly initialize points on the matrix."""
         self.points = []
         for p in range(n_points):
@@ -26,7 +27,7 @@ class Display:
             p.color *= random.random()
             self.points.append(p)
 
-    def UpdateAndGetDefaultPoints(self):
+    def UpdateRandomPoints(self):
         """Update and return points for default display"""
         for p in self.points:
             p.color -= 1
@@ -35,7 +36,7 @@ class Display:
                 p.position = np.array([random.randint(0,15), random.randint(0,15)])
         return self.points
 
-    def GetImagePixels(self):
+    def GetImagePoints(self):
         """Returns image pixels for the current image and offset."""
         self.points = []
 
@@ -52,17 +53,17 @@ class Display:
                         self.points.append(p)
         return self.points
 
-    def ScrollImage(self, img_file, scroll_axis, scroll_direction, img_transpose):
+    def UpdateImage(self, img_file, scroll_params, img_transpose):
         """Scrolls image one row of pixels in provided direction.
 
         Args:
           img_file: String file name for image to show.
-          axis: Integer 0 (x-axis) or 1 (y-axis) for scroll axis.
-          positive: Boolean indicating scroll direction.
+          scroll_params: Tuple containing scroll axis and scroll step.
+          img_transpose: PIL image transpose Enum.
         """
         self.img = Image.open(img_file)
-        self.step += scroll_direction
-        self.axis = scroll_axis
+        self.axis = scroll_params[0]
+        self.step += scroll_params[1]
 
         # Convert to numpy array and return cropped image.
         np_image = np.array(self.img)
@@ -71,4 +72,13 @@ class Display:
         self.img = Image.fromarray(np_image)
         self.img = self.img.transpose(img_transpose)
 
-        return self.GetImagePixels()
+        return self.GetImagePoints()
+
+    def UpdateGlassesImage(self):
+        print(self.step)
+        if self.step >= 10 or self.step < 0:
+          time.sleep(1.5)
+          self.step = 0
+
+        time.sleep(0.1)
+        return self.UpdateImage("glasses.png", (0, 1), Image.ROTATE_180)
