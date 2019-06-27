@@ -3,6 +3,10 @@ import random
 import time
 import numpy as np
 from PIL import Image
+import os.path
+
+my_path = os.path.abspath(os.path.dirname(__file__))
+glasses_path = os.path.join(my_path, "glasses.png")
 
 width, height = unicornhathd.get_shape()
 
@@ -75,10 +79,9 @@ class Display:
         return self.GetImagePoints()
 
     def UpdateGlassesImage(self):
-        print(self.step)
         if self.step >= 10 or self.step < 0:
           time.sleep(1.5)
           self.step = 0
 
         time.sleep(0.1)
-        return self.UpdateImage("glasses.png", (0, 1), Image.ROTATE_180)
+        return self.UpdateImage(glasses_path, (0, 1), Image.ROTATE_180)
