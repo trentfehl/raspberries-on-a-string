@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import signal
+import sys
 import math
 import time
 import colorsys
@@ -13,7 +14,7 @@ from enum import Enum
 
 import display
 
-MQTT_NEIGHBOR = "clubhouse"  # Set this to the hostname of the other display.
+MQTT_NEIGHBOR = "clubhouse.local"  # Set this to the hostname of the other display.
 MQTT_PATH = "comms_channel"
 
 # Set path of images passed to display.
@@ -81,10 +82,16 @@ def on_message(client, userdata, msg):
     global mode
     mode = msg.payload
 
+def signal_handler(sig, frame):
+    client.loop_stop()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 # Configure and start MQTT client.
 client = mqtt.Client()
 client.on_message = on_message
-client.connect(MQTT_NEIGHBOR, 1883, 60)
+client.connect(MQTT_NEIGHBOR)
 client.loop_start()
 
 # Configure Unicorn hat display.
