@@ -1,87 +1,153 @@
-import unicornhathd
-import random
-import time
-import numpy as np
-from PIL import Image
+#!/usr/bin/env python
 import os.path
+import signal
+import sockets
+import sys
+import math
+import time
+import colorsys
+import buttonshim
+import unicornhathd
+from enum import Enum
+from PIL import Image
 
+import display_lib
+
+# Set path of images passed to display.
 my_path = os.path.abspath(os.path.dirname(__file__))
-glasses_path = os.path.join(my_path, "glasses.png")
+ghost_path = os.path.join(my_path, "ghost_tall.png")
 
-width, height = unicornhathd.get_shape()
+# Configure Unicorn hat display.
+unicornhathd.rotation(0)
+unicornhathd.brightness(0.6)
 
-class Point:
-  def __init__(self):
-      self.position = np.zeros(2)
-      self.color = np.array([255.0,255.0,255.0]) # Default to white.
+# Initialize Display class.
+display = display.Display()
 
-class Display:
-    """Functions for display modes."""
-    def __init__(self):
-        self.points = []
-        self.step = 0
-        self.axis = 0
+# Set default mode.
+mode = Mode.DEFAULT
 
-    def InitializeRandomPoints(self, n_points):
-        """Randomly initialize points on the matrix."""
-        self.points = []
-        for p in range(n_points):
-            p = Point()
-            p.position = np.array([random.randint(0,15), random.randint(0,15)])
-            p.color *= random.random()
-            self.points.append(p)
+server = DisplayServer('localhost', 8080)
+asyncore.loop()
 
-    def UpdateRandomPoints(self):
-        """Update and return points for default display"""
-        for p in self.points:
-            p.color -= 1
-            if p.color[0] <= 0:
-                p.color = np.array([200.0,200.0,200.0])*random.random()
-                p.position = np.array([random.randint(0,15), random.randint(0,15)])
-        return self.points
+def signal_handler(sig, frame):
+    sys.exit(0)
 
-    def GetImagePoints(self):
-        """Returns image pixels for the current image and offset."""
-        self.points = []
+class Mode(Enum):
+    DEFAULT = 0
+    GHOST = 1
+    GLASSES = 2
 
-        for x in range(width):
-            for y in range(height):
-                pixel = self.img.getpixel((x, y))
-                if pixel:
-                    r, g, b = int(pixel[0]), int(pixel[1]), int(pixel[2])
-                    if r or g or b:
-                        p = Point()
-                        p.position = np.array([y,x])
-                        # Store color but cap brightnes.
-                        p.color = np.array([min(r,180), min(g,180), min(b,180)])
-                        self.points.append(p)
-        return self.points
+class DisplayServer(asyncore.dispatcher):
 
-    def UpdateImage(self, img_file, scroll_params, img_transpose):
-        """Scrolls image one row of pixels in provided direction.
+    def __init__(self, host, port):
+        asyncore.dispatcher.__init__(self)
 
-        Args:
-          img_file: String file name for image to show.
-          scroll_params: Tuple containing scroll axis and scroll step.
-          img_transpose: PIL image transpose Enum.
+        self._thread = None
+        self._read_handler = None
+
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.set_reuse_addr()
+        self.bind((host, port))
+        self.listen(5)
+
+    def start(self):
         """
-        self.img = Image.open(img_file)
-        self.axis = scroll_params[0]
-        self.step += scroll_params[1]
+        For use when an asyncore.loop is not already running.
+        Starts a threaded loop.
+        """
+        if self._thread is not None:
+            return
 
-        # Convert to numpy array and return cropped image.
-        np_image = np.array(self.img)
-        np_image = np.roll(np_image, self.step, self.axis)[:16,:16]
+        self._thread = threading.Thread(target=asyncore.loop, kwargs={'timeout':1})
+        self._thread.daemon = True
+        self._thread.start()
 
-        self.img = Image.fromarray(np_image)
-        self.img = self.img.transpose(img_transpose)
+    def stop(self):
+        """Stops a threaded loop"""
+        self.close()
+        if self._thread is not None:
+            thread, self._thread = self._thread, None
+            thread.join()
 
-        return self.GetImagePoints()
+    def set_read_handler(self, read_fn):
+        """
+        Set a callable function that accepts a socket which is
+        ready for data to be read
+        """
+        if not callable(read_fn):
+            raise TypeError('read_fn %r is not callable' % read_fn)
 
-    def UpdateGlassesImage(self):
-        if self.step >= 10 or self.step < 0:
-          time.sleep(1.5)
-          self.step = 0
+        class Handler(asyncore.dispatcher_with_send):
+            def handle_read(self):
+                read_fn(self)
 
-        time.sleep(0.1)
-        return self.UpdateImage(glasses_path, (0, 1), Image.ROTATE_180)
+        self._read_handler = Handler
+
+    def handle_accept(self):
+        pair = self.accept()
+        if pair is None:
+            return
+
+        sock, addr = pair
+        if self._read_handler is None:
+            print('No read handler. Refusing connection from %s' % repr(addr))
+            sock.close()
+            return
+
+        print('Incoming connection from %s' % repr(addr))
+        self._read_handler(sock)
+
+class DisplayHandler(asyncore.dispatcher_with_send):
+
+    def __init__(self, host='localhost', port=8080):
+        self.server = DisplayServer(host, port)
+        self.server.set_read_handler(self.handle_read)
+        self.server.start()
+
+    def handle_read(self):
+        data = self.recv(8192)
+        if data:
+          global mode
+          mode = data
+
+def main():
+    """Main function for displaying different modes."""
+
+    while True:
+        display_lib.InitializeRandomPoints(n_points = 20)
+        while mode == Mode.DEFAULT:
+            unicornhathd.clear()
+            points = display_lib.UpdateRandomPoints()
+            for p in points:
+                unicornhathd.set_pixel(p.position[0], p.position[1],
+                                       p.color[0], p.color[1], p.color[2])
+            unicornhathd.show()
+            time.sleep(0.01)
+
+        while mode == Mode.GHOST:
+            unicornhathd.clear()
+            unicornhathd.show()
+
+            points = display_lib.UpdateImage(img_file=ghost_path,
+                                         scroll_params=(0, -1),
+                                         img_transpose=Image.ROTATE_180)
+            for p in points:
+                unicornhathd.set_pixel(p.position[0], p.position[1],
+                                       p.color[0], p.color[1], p.color[2])
+            unicornhathd.show()
+            time.sleep(0.005)
+
+        points = display_lib.UpdateGlassesImage()
+        while mode == Mode.GLASSES:
+            unicornhathd.clear()
+            unicornhathd.show()
+
+            for p in points:
+                unicornhathd.set_pixel(p.position[0], p.position[1],
+                                       p.color[0], p.color[1], p.color[2])
+            unicornhathd.show()
+            time.sleep(0.005)
+            points = display_lib.UpdateGlassesImage()
+
+main()
