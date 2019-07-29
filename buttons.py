@@ -13,7 +13,8 @@ class Mode(IntEnum):
 class ButtonWriter(object):
 
     # Change the host to match the IP address to match the connected device.
-    def __init__(self, host='localhost', port=8080):
+    # Ex: def __init__(self, host='192.168.1.11', port=9001):
+    def __init__(self, host='192.168.1.10', port=9001):
         self._sock = socket.create_connection((host, port))
 
     def send(self, data):

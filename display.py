@@ -92,7 +92,7 @@ class DisplayServer(asyncore.dispatcher):
 
 class DisplayHandler(object):
 
-    def __init__(self, host='localhost', port=8080):
+    def __init__(self, host='0.0.0.0', port=9000):
         self.server = DisplayServer(host, port)
         self.server.set_read_handler(self.handle_read)
         self.server.start()
