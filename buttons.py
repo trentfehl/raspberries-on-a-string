@@ -7,7 +7,7 @@ import buttonshim
 from enum import IntEnum
 
 parser = argparse.ArgumentParser()
-parser.add_argument("loopback")
+parser.add_argument("--loopback")
 args = parser.parse_args()
 
 class Mode(IntEnum):

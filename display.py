@@ -3,7 +3,6 @@ import os.path
 import signal
 import socket
 import asyncore
-import argparse
 import threading
 import sys
 import math
@@ -14,11 +13,6 @@ from enum import Enum
 from PIL import Image
 
 import display_lib
-
-# Parse arguments.
-parser = argparse.ArgumentParser()
-parser.add_argument("loopback")
-args = parser.parse_args()
 
 # Set path of images passed to display.
 my_path = os.path.abspath(os.path.dirname(__file__))
