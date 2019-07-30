@@ -3,6 +3,7 @@ import os.path
 import signal
 import socket
 import asyncore
+import argparse
 import threading
 import sys
 import math
@@ -13,6 +14,11 @@ from enum import Enum
 from PIL import Image
 
 import display_lib
+
+# Parse arguments.
+parser = argparse.ArgumentParser()
+parser.add_argument("loopback")
+args = parser.parse_args()
 
 # Set path of images passed to display.
 my_path = os.path.abspath(os.path.dirname(__file__))
@@ -27,8 +33,9 @@ def signal_handler(sig, frame):
 
 class Mode(Enum):
     DEFAULT = 0
-    GHOST = 1
-    GLASSES = 2
+    DROPS = 1
+    GHOST = 2
+    GLASSES = 3
 
 class DisplayServer(asyncore.dispatcher):
 
@@ -92,7 +99,7 @@ class DisplayServer(asyncore.dispatcher):
 
 class DisplayHandler(object):
 
-    def __init__(self, host='localhost', port=8080):
+    def __init__(self, host='0.0.0.0', port=9001):
         self.server = DisplayServer(host, port)
         self.server.set_read_handler(self.handle_read)
         self.server.start()
@@ -120,6 +127,16 @@ def main():
         while mode == Mode.DEFAULT:
             unicornhathd.clear()
             points = display.UpdateRandomPoints()
+            for p in points:
+                unicornhathd.set_pixel(p.position[0], p.position[1],
+                                       p.color[0], p.color[1], p.color[2])
+            unicornhathd.show()
+            time.sleep(0.01)
+
+        display.InitializeRandomPoints(n_points = 10)
+        while mode == Mode.DROPS:
+            unicornhathd.clear()
+            points = display.UpdateDroplets()
             for p in points:
                 unicornhathd.set_pixel(p.position[0], p.position[1],
                                        p.color[0], p.color[1], p.color[2])
