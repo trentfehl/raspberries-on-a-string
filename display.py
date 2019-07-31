@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import os.path
 import signal
-import sockets
+import socket
+import asyncore
+import threading
 import sys
 import math
 import time
 import colorsys
-import buttonshim
 import unicornhathd
 from enum import Enum
 from PIL import Image
@@ -21,22 +22,14 @@ ghost_path = os.path.join(my_path, "ghost_tall.png")
 unicornhathd.rotation(0)
 unicornhathd.brightness(0.6)
 
-# Initialize Display class.
-display = display.Display()
-
-# Set default mode.
-mode = Mode.DEFAULT
-
-server = DisplayServer('localhost', 8080)
-asyncore.loop()
-
 def signal_handler(sig, frame):
     sys.exit(0)
 
 class Mode(Enum):
     DEFAULT = 0
-    GHOST = 1
-    GLASSES = 2
+    DROPS = 1
+    GHOST = 2
+    GLASSES = 3
 
 class DisplayServer(asyncore.dispatcher):
 
@@ -98,27 +91,46 @@ class DisplayServer(asyncore.dispatcher):
         print('Incoming connection from %s' % repr(addr))
         self._read_handler(sock)
 
-class DisplayHandler(asyncore.dispatcher_with_send):
+class DisplayHandler(object):
 
-    def __init__(self, host='localhost', port=8080):
+    def __init__(self, host='0.0.0.0', port=9000):
         self.server = DisplayServer(host, port)
         self.server.set_read_handler(self.handle_read)
         self.server.start()
 
-    def handle_read(self):
-        data = self.recv(8192)
+    def handle_read(self, sock):
+        data = sock.recv(8192)
         if data:
           global mode
-          mode = data
+          mode = Mode[data.decode()]
+          print("mode = {}".format(mode))
 
 def main():
     """Main function for displaying different modes."""
+    server = DisplayHandler()
+
+    # Set starting mode.
+    global mode
+    mode = Mode.DEFAULT
+
+    # Initialize Display class.
+    display = display_lib.Display()
 
     while True:
-        display_lib.InitializeRandomPoints(n_points = 20)
+        display.InitializeRandomPoints(n_points = 20)
         while mode == Mode.DEFAULT:
             unicornhathd.clear()
-            points = display_lib.UpdateRandomPoints()
+            points = display.UpdateRandomPoints()
+            for p in points:
+                unicornhathd.set_pixel(p.position[0], p.position[1],
+                                       p.color[0], p.color[1], p.color[2])
+            unicornhathd.show()
+            time.sleep(0.01)
+
+        display.InitializeRandomPoints(n_points = 10)
+        while mode == Mode.DROPS:
+            unicornhathd.clear()
+            points = display.UpdateDroplets()
             for p in points:
                 unicornhathd.set_pixel(p.position[0], p.position[1],
                                        p.color[0], p.color[1], p.color[2])
@@ -129,7 +141,7 @@ def main():
             unicornhathd.clear()
             unicornhathd.show()
 
-            points = display_lib.UpdateImage(img_file=ghost_path,
+            points = display.UpdateImage(img_file=ghost_path,
                                          scroll_params=(0, -1),
                                          img_transpose=Image.ROTATE_180)
             for p in points:
@@ -138,7 +150,7 @@ def main():
             unicornhathd.show()
             time.sleep(0.005)
 
-        points = display_lib.UpdateGlassesImage()
+        points = display.UpdateGlassesImage()
         while mode == Mode.GLASSES:
             unicornhathd.clear()
             unicornhathd.show()
@@ -148,6 +160,7 @@ def main():
                                        p.color[0], p.color[1], p.color[2])
             unicornhathd.show()
             time.sleep(0.005)
-            points = display_lib.UpdateGlassesImage()
+            points = display.UpdateGlassesImage()
+
 
 main()
