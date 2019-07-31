@@ -6,7 +6,10 @@ This project is kind of the modern day cup-on-a-string communication device. Ori
 <img src="/media/communicator_demo.gif" width="496" height="289">
 </p>
 <br />
-<img src="/media/default.JPG" width="380px"/> <img src="/media/glasses.JPG" width ="380px"/>
+
+<p align="center">
+<img src="/media/default.JPG" width="420px"/> <img src="/media/glasses.JPG" width ="420px"/>
+</p>
 
 ### Setup
 There are a few network and system settings that you'll need to configure
