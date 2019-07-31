@@ -1,5 +1,5 @@
-# office-communicator
-This project is kind of the modern day cup-on-a-string communication device. Originally conceived to connect two different desks in an office with a fun, hard-wired communication pipe, the office-communicator is a fun way to send messages via a 16x16 LED matrix on one end and 5 buttons on the other. This project utilizes a Raspberry Pi and the Unicorn Hat HD and Button Shim from Pimeroni. Check out the media below and the setup guide if you want to run it yourself.
+# Raspberries-on-a-String
+This project is kind of the modern day cup-on-a-string communication device. Originally conceived to connect two different desks in an office with a fun, hard-wired communication pipe, Raspberries-on-a-String is a fun way to send messages via a 16x16 LED matrix on one end and 5 buttons on the other. This project utilizes a Raspberry Pi and the Unicorn Hat HD and Button Shim from Pimeroni. Check out the media below and the setup guide if you want to run it yourself.
 
 ### In Operation
 <p align="center">
