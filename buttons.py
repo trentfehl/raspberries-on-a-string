@@ -18,14 +18,14 @@ class Mode(IntEnum):
 
 class ButtonWriter(object):
 
-    # Change the host to match the IP address to match the connected device.
-    # Ex: def __init__(self, host='192.168.1.11', port=9001):
-    def __init__(self, host='192.168.1.10', port=9000):
+    # CHANGE: The host and port here need to match the *other* device's address.
+    def __init__(self, host='192.168.1.11', port=9001):
         self._sock = socket.create_connection((host, port))
 
     def send(self, data):
         self._sock.sendall(data)
 
+# CHANGE: The port here needs to match *this* device's server port. (See display.py)
 local_writer = ButtonWriter("localhost", 9000)
 
 if args.loopback:
